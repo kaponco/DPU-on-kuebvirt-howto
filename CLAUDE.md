@@ -17,7 +17,7 @@ This is a **documentation-first repository** where materials will be added incre
 ## Repository Structure
 
 ```
-dpu-misc/
+DPU-on-kuebvirt-howto/
 ├── docs/                      # Documentation and procedures
 │   ├── architecture.md        # DPU/DPF architecture deep-dive
 │   ├── basic-instalation.md   # Manual CNV cluster setup with OVN-K UDN
@@ -31,6 +31,7 @@ dpu-misc/
 │   ├── rosa-cli-setup.md             # ROSA CLI installation guide
 │   ├── rosa-metal-worker-tasks.md    # ROSA worker provisioning tasks
 │   └── vm-tasks.md                   # VM operation checklists
+├── logs/                      # Output logs from cluster operations
 └── CLAUDE.md                  # This file
 ```
 
@@ -99,7 +100,80 @@ Operational checklists for common procedures:
 - `rosa-metal-worker-tasks.md` - Tasks for provisioning ROSA worker nodes
 - `vm-tasks.md` - VM operation and management checklists
 
+## Required Tools
+
+The following CLI tools are used throughout the documentation and task lists:
+
+- **oc**: OpenShift CLI for cluster management and resource manipulation
+- **virtctl**: KubeVirt CLI for VM console access and lifecycle operations
+- **rosa**: Red Hat OpenShift Service on AWS CLI (for ROSA-specific workflows)
+- **kubectl**: Kubernetes CLI (oc is a superset, but some docs may reference kubectl)
+
+Installation instructions for ROSA CLI are available in `tasks-lists/rosa-cli-setup.md`.
+
+## Common Commands
+
+### Cluster and Operator Verification
+```bash
+# Check CNV operator status
+oc get csv -n openshift-cnv
+oc get hyperconverged -n openshift-cnv
+
+# Verify virt-handler pods on workers
+oc get pods -n openshift-cnv | grep virt-handler
+
+# Check OVN-Kubernetes pods
+oc get pod -n openshift-ovn-kubernetes -o wide
+```
+
+### VM Lifecycle Management
+```bash
+# List VMs and VM instances
+oc get vm -n <namespace>
+oc get vmi -n <namespace>
+
+# Watch VM status changes
+oc get vmi <vm-name> -n <namespace> -w
+
+# Access VM console
+virtctl console <vm-name> -n <namespace>
+
+# Find the virt-launcher pod for a VM
+oc get pod -n <namespace> -o wide | grep virt-launcher
+```
+
+### Network Configuration
+```bash
+# List User Defined Networks
+oc get userdefinednetwork -n <namespace>
+
+# Inspect UDN details
+oc describe userdefinednetwork <udn-name> -n <namespace>
+
+# Check network attachment definitions
+oc get network-attachment-definition -n <namespace>
+```
+
+### Resource Application
+```bash
+# Apply custom resources from this repository
+oc apply -f custom-resources/user-defined-network.yaml
+oc apply -f custom-resources/virtual-machine.yaml
+
+# Create namespaces
+oc create namespace vm-workloads
+```
+
 ## Working with This Repository
+
+### Following Task Lists
+
+**Start here for step-by-step procedures:**
+- **First-time VM deployment**: `tasks-lists/vm-tasks.md` - Complete workflow from CNV operator to running VM
+- **ROSA cluster setup**: `tasks-lists/rosa-cli-setup.md` - ROSA CLI installation and authentication
+- **ROSA metal workers**: `tasks-lists/rosa-metal-worker-tasks.md` - Provisioning bare metal worker nodes
+
+Each task list includes verification commands and success criteria.
 
 ### Applying Custom Resources
 To deploy VMs or networks using the provided YAML manifests:
@@ -108,8 +182,16 @@ oc apply -f custom-resources/user-defined-network.yaml
 oc apply -f custom-resources/virtual-machine.yaml
 ```
 
-### Using Task Lists
-Task lists in `tasks-lists/` are Markdown checklists for operational procedures. Use them as step-by-step guides for setup and configuration tasks.
+### Reading Documentation Guides
+
+The `docs/` directory contains comprehensive guides for understanding DPU/DPF architecture and deployment:
+
+- **Start with `architecture.md`** to understand DPU fundamentals before attempting deployments
+- **Use `basic-instalation.md`** for manual setup workflows with detailed explanations
+- **Use `openshift-dpf-readme.md`** for automated deployment (requires [openshift-dpf](https://github.com/rh-ecosystem-edge/openshift-dpf) repository)
+- **Use `gemini-instructions.md`** for SNO + DPU worker integration scenarios
+
+These are reference guides, not step-by-step checklists. For operational checklists, see the task lists.
 
 ### Documentation Standards
 
@@ -118,6 +200,7 @@ When adding new documentation to this repository:
 - **Documentation**: Place in `docs/` directory with descriptive filenames
 - **YAML manifests**: Place in `custom-resources/` with resource type in filename
 - **Checklists**: Place in `tasks-lists/` for operational procedures
+- **Logs**: Place command output samples in `logs/` with descriptive filenames (e.g., `my-rosa-vm-output-no-dpu.log`)
 - Include step-by-step procedures with validation criteria
 - Document both standard and DPU-accelerated configurations where applicable
 - Reference official Red Hat/OpenShift documentation for prerequisites
