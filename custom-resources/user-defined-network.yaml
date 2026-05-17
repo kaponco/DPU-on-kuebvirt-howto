@@ -1,0 +1,11 @@
+apiVersion: k8s.ovn.org/v1
+kind: UserDefinedNetwork
+metadata:
+  name: vm-udn
+  namespace: vm-workloads
+spec:
+  topology: Layer2
+  layer2:
+    role: Secondary
+    subnets:
+      - "10.100.0.0/24"
