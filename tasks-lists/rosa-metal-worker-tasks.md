@@ -4,26 +4,26 @@ This checklist covers adding an AWS metal instance worker to an existing ROSA cl
 
 ## Prerequisites
 
-- [x ] ROSA cluster is running and accessible
-- [x ] AWS account has capacity for metal instances in the region
-- [x ] rosa CLI installed and configured
-- [x ] oc CLI authenticated to the cluster
+- [x] ROSA cluster is running and accessible
+- [x] AWS account has capacity for metal instances in the region
+- [x] rosa CLI installed and configured
+- [x] oc CLI authenticated to the cluster
 
 ## Phase 1: Verify Current Cluster State
 
-- [x ] Check current machine pools
+- [x] Check current machine pools
   ```bash
   rosa list machinepools --cluster=<cluster-name>
   ```
 
-- [x ] Verify current worker instance types
+- [x] Verify current worker instance types
   ```bash
   # ROSA doesn't expose Machine API - use rosa CLI instead
   rosa list machinepools --cluster=<cluster-name>
   ```
   Shows: workers (m5.xlarge), gpu-workers (g6.xlarge)
 
-- [x ] Check CNV operator is installed (if planning to use VMs)
+- [x] Check CNV operator is installed (if planning to use VMs)
   ```bash
   oc get csv -n openshift-cnv
   oc get hyperconverged -n openshift-cnv
@@ -31,7 +31,7 @@ This checklist covers adding an AWS metal instance worker to an existing ROSA cl
 
 ## Phase 2: Create Metal Instance Machine Pool
 
-- [x ] List available metal instance types for your region
+- [x] List available metal instance types for your region
   Common options:
   - `m5.metal` - 96 vCPU, 384 GiB RAM (general purpose)
   - `m5zn.metal` - 48 vCPU, 192 GiB RAM (high frequency)
@@ -40,7 +40,7 @@ This checklist covers adding an AWS metal instance worker to an existing ROSA cl
   
   Check pricing and availability: https://aws.amazon.com/ec2/instance-types/
 
-- [x ] Create new machine pool with metal instance type
+- [x] Create new machine pool with metal instance type
   ```bash
   rosa create machinepool \
     --cluster=<cluster-name> \
@@ -51,12 +51,12 @@ This checklist covers adding an AWS metal instance worker to an existing ROSA cl
   
   **Note**: Metal instances are expensive. Start with `--replicas=1` for testing.
 
-- [x ] Wait for machine pool creation to complete
+- [x] Wait for machine pool creation to complete
   ```bash
   rosa list machinepools --cluster=<cluster-name>
   ```
 
-- [x ] Monitor node provisioning
+- [x] Monitor node provisioning
   ```bash
   # Watch for new nodes to appear (ROSA doesn't expose Machine API)
   oc get nodes -w
@@ -68,28 +68,28 @@ This checklist covers adding an AWS metal instance worker to an existing ROSA cl
 
 ## Phase 3: Verify Metal Worker Node
 
-- [x ] Wait for new node to appear and reach Ready state
+- [x] Wait for new node to appear and reach Ready state
   ```bash
   oc get nodes -w
   ```
 
-- [x ] Identify the metal instance node
+- [x] Identify the metal instance node
   ```bash
   oc get nodes -l node.openshift.io/os_id=rhcos -o custom-columns=NAME:.metadata.name,INSTANCE:.metadata.labels.'beta\.kubernetes\.io/instance-type'
   ```
   Look for the node with instance type `m5.metal` (or your chosen type)
 
-- [x ] Verify node has worker role
+- [x] Verify node has worker role
   ```bash
   oc get node <metal-node-name> --show-labels | grep worker
   ```
 
-- [x ] Check virt-handler is running on metal node (if CNV installed)
+- [x] Check virt-handler is running on metal node (if CNV installed)
   ```bash
   oc get pods -n openshift-cnv -o wide | grep virt-handler | grep <metal-node-name>
-  ```§
+  ```
 
-- [x ] Verify KVM devices are available
+- [x] Verify KVM devices are available
   ```bash
   oc describe node <metal-node-name> | grep devices.kubevirt.io/kvm
   ```
@@ -97,7 +97,7 @@ This checklist covers adding an AWS metal instance worker to an existing ROSA cl
 
 ## Phase 4: Configure Metal Worker for VMs (Optional)
 
-- [x ] Label the metal node for VM workloads
+- [x] Label the metal node for VM workloads
   ```bash
   oc label node <metal-node-name> workload-type=virtualization
   ```
@@ -109,20 +109,20 @@ This checklist covers adding an AWS metal instance worker to an existing ROSA cl
   
   **Note**: If you taint the node, you'll need to add tolerations to VM manifests.
 
-- [x ] Verify node capacity and allocatable resources
+- [x] Verify node capacity and allocatable resources
   ```bash
   oc describe node <metal-node-name> | grep -A 15 "Capacity:"
   ```
 
 ## Phase 5: Deploy Test VM to Metal Worker
 
-- [x ] Update VM manifest to target metal worker
+- [x] Update VM manifest to target metal worker
   Create `custom-resources/virtual-machine-metal.yaml`:
   ```bash
   cp custom-resources/virtual-machine.yaml custom-resources/virtual-machine-metal.yaml
   ```
 
-- [x ] Add nodeSelector to target metal worker
+- [x] Add nodeSelector to target metal worker
   Edit `custom-resources/virtual-machine-metal.yaml` and add under `spec.template.spec`:
   ```yaml
   nodeSelector:
@@ -142,46 +142,46 @@ This checklist covers adding an AWS metal instance worker to an existing ROSA cl
       effect: "NoSchedule"
   ```
 
-- [x ] Deploy VM to metal worker
+- [x] Deploy VM to metal worker
   ```bash
   oc apply -f custom-resources/virtual-machine-metal.yaml
   ```
 
-- [x ] Verify VM is scheduled on metal worker
+- [x] Verify VM is scheduled on metal worker
   ```bash
   oc get vm -n vm-workloads
   oc get vmi -n vm-workloads
   oc get pod -n vm-workloads -o wide | grep virt-launcher
   ```
 
-- [x ] Wait for VM to reach Running state
+- [x] Wait for VM to reach Running state
   ```bash
   oc get vmi test-vm -n vm-workloads -w
   ```
 
 ## Phase 6: Validation
 
-- [x ] Access VM console
+- [x] Access VM console
   ```bash
   virtctl console test-vm -n vm-workloads
   ```
 
-- [x ] Verify VM has IP from UDN
+- [x] Verify VM has IP from UDN
   Inside VM console:
   ```bash
   ip addr show
   ```
   Confirm IP is in `10.100.0.0/24` range
 
-- [x ] Test VM networking
+- [x] Test VM networking
   ```bash
   ping 8.8.8.8
   ping <another-vm-or-pod-ip>
   ```
 
-- [x ] Exit console (Ctrl+] or Ctrl+5)
+- [x] Exit console (Ctrl+] or Ctrl+5)
 
-- [x ] Check VM is using KVM (not emulation)
+- [x] Check VM is using KVM (not emulation)
   ```bash
   # Verify the VM pod is running on the metal worker node
   oc get pod -n vm-workloads -l kubevirt.io/vm=test-vm -o wide
@@ -204,9 +204,9 @@ This checklist covers adding an AWS metal instance worker to an existing ROSA cl
 
 ## Cost Optimization
 
-- [x ] **IMPORTANT**: Metal instances are expensive (~$4-6/hour for m5.metal)
+- [x] **IMPORTANT**: Metal instances are expensive (~$4-6/hour for m5.metal)
   
-- [x ] To stop incurring costs, scale down the machine pool when not in use:
+- [x] To stop incurring costs, scale down the machine pool when not in use:
   ```bash
   rosa edit machinepool metal-workers --cluster=<cluster-name> --replicas=0
   ```
