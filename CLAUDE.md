@@ -31,7 +31,7 @@ DPU-on-kuebvirt-howto/
 │   ├── rosa-cli-setup.md             # ROSA CLI installation guide
 │   ├── rosa-metal-worker-tasks.md    # ROSA worker provisioning tasks
 │   └── vm-tasks.md                   # VM operation checklists
-├── logs/                      # Output logs from cluster operations
+├── outputs/                   # Command outputs from cluster operations
 └── CLAUDE.md                  # This file
 ```
 
@@ -200,7 +200,7 @@ When adding new documentation to this repository:
 - **Documentation**: Place in `docs/` directory with descriptive filenames
 - **YAML manifests**: Place in `custom-resources/` with resource type in filename
 - **Checklists**: Place in `tasks-lists/` for operational procedures
-- **Logs**: Place command output samples in `logs/` with descriptive filenames (e.g., `my-rosa-vm-output-no-dpu.log`)
+- **Outputs**: Place command output samples in `outputs/` with descriptive filenames (e.g., `my-rosa-vm-output-no-dpu.out`)
 - Include step-by-step procedures with validation criteria
 - Document both standard and DPU-accelerated configurations where applicable
 - Reference official Red Hat/OpenShift documentation for prerequisites

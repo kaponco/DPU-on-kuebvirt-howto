@@ -1,0 +1,32 @@
+➜  dpu-misc virtctl console test-vm -n vm-workloads
+Successfully connected to test-vm console. Press Ctrl+] or Ctrl+5 to exit console.
+
+test-vm login: fedora
+Password:
+
+[fedora@test-vm ~]$ ip addr show
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host noprefixroute
+       valid_lft forever preferred_lft forever
+2: enp1s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 8901 qdisc fq_codel state UP group default qlen 1000
+    link/ether 02:ae:4e:00:00:06 brd ff:ff:ff:ff:ff:ff
+    altname enx02ae4e000006
+    inet 10.0.2.2/24 brd 10.0.2.255 scope global dynamic noprefixroute enp1s0
+       valid_lft 86310421sec preferred_lft 86310421sec
+    inet6 fe80::ae:4eff:fe00:6/64 scope link noprefixroute
+       valid_lft forever preferred_lft forever
+3: enp2s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 8901 qdisc fq_codel state UP group default qlen 1000
+    link/ether 02:ae:4e:00:00:07 brd ff:ff:ff:ff:ff:ff
+    altname enx02ae4e000007
+    inet 10.100.0.2/24 brd 10.100.0.255 scope global dynamic noprefixroute enp2s0
+       valid_lft 86310421sec preferred_lft 86310421sec
+    inet6 fe80::ae:4eff:fe00:7/64 scope link noprefixroute
+       valid_lft forever preferred_lft forever
+       
+[fedora@test-vm ~]$ ping 8.8.8.8
+PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
+64 bytes from 8.8.8.8: icmp_seq=1 ttl=113 time=6.99 ms
+64 bytes from 8.8.8.8: icmp_seq=2 ttl=113 time=3.56 ms
