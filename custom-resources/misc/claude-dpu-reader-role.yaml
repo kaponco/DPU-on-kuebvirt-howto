@@ -1,0 +1,80 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: claude-dpu-reader
+rules:
+# DPF Operator resources
+- apiGroups: ["operator.dpu.nvidia.com"]
+  resources:
+    - dpfoperatorconfigs
+  verbs: ["get", "list", "watch"]
+
+# DPU Provisioning resources
+- apiGroups: ["provisioning.dpu.nvidia.com"]
+  resources:
+    - bfbs
+    - bluefieldsoftwares
+    - dpuclusters
+    - dpudevices
+    - dpudiscoveries
+    - dpuflavors
+    - dpunodemaintenances
+    - dpunodes
+    - dpus
+    - dpusets
+  verbs: ["get", "list", "watch"]
+
+# DPU Service resources
+- apiGroups: ["svc.dpu.nvidia.com"]
+  resources:
+    - dpudeployments
+    - dpuservicechains
+    - dpuserviceconfigurations
+    - dpuservicecredentialrequests
+    - dpuserviceinterfaces
+    - dpuserviceipams
+    - dpuservicenads
+    - dpuservices
+    - dpuservicetemplates
+    - servicechains
+    - servicechainsets
+    - serviceinterfaces
+    - serviceinterfacesets
+  verbs: ["get", "list", "watch"]
+
+# DPU Storage resources
+- apiGroups: ["storage.dpu.nvidia.com"]
+  resources:
+    - dpustoragepolicies
+    - dpustoragevendors
+    - dpuvolumeattachments
+    - dpuvolumes
+  verbs: ["get", "list", "watch"]
+
+# DPU VPC/Networking resources
+- apiGroups: ["vpc.dpu.nvidia.com"]
+  resources:
+    - dpuvirtualnetworks
+    - dpuvpcs
+    - isolationclasses
+  verbs: ["get", "list", "watch"]
+
+# Node resources
+- apiGroups: ["noderesources.dpu.nvidia.com"]
+  resources:
+    - nodesriovdevicepluginconfigs
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: claude-dpu-reader
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: claude-dpu-reader
+subjects:
+- kind: ServiceAccount
+  name: claude-readonly
+  namespace: default

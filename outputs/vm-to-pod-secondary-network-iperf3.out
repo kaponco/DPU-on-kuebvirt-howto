@@ -1,0 +1,27 @@
+## Test: VM-to-Pod iperf3 over Secondary OVN-K Layer2 Network
+## Date: 2026-06-07
+## Path: VM (srv23, sriov-test/vm-srv23-sriov) → Pod (srv27, sriov-test/test-pod-srv27)
+## Network: Secondary OVN-K layer2 (192.168.200.0/24) using bf3-p0-vfs-udn VFs
+## VM IP: 192.168.200.2 (enp2s0)
+## Pod IP: 192.168.200.4 (net1)
+
+iperf3 -c 192.168.200.4
+Connecting to host 192.168.200.4, port 5201
+[  5] local 192.168.200.2 port 40632 connected to 192.168.200.4 port 5201
+[ ID] Interval           Transfer     Bitrate         Retr  Cwnd
+[  5]   0.00-1.00   sec  5.37 GBytes  46.0 Gbits/sec   44   4.16 MBytes
+[  5]   1.00-2.00   sec  5.51 GBytes  47.3 Gbits/sec    0   4.16 MBytes
+[  5]   2.00-3.00   sec  5.42 GBytes  46.5 Gbits/sec    0   4.16 MBytes
+[  5]   3.00-4.00   sec  4.59 GBytes  39.4 Gbits/sec    0   4.16 MBytes
+[  5]   4.00-5.00   sec  3.40 GBytes  29.3 Gbits/sec    0   4.16 MBytes
+[  5]   5.00-6.00   sec  5.45 GBytes  46.8 Gbits/sec    0   4.16 MBytes
+[  5]   6.00-7.00   sec  5.49 GBytes  47.1 Gbits/sec    0   4.16 MBytes
+[  5]   7.00-8.00   sec  5.39 GBytes  46.3 Gbits/sec    0   4.16 MBytes
+[  5]   8.00-9.00   sec  4.93 GBytes  42.3 Gbits/sec    0   4.16 MBytes
+[  5]   9.00-10.00  sec  5.07 GBytes  43.6 Gbits/sec    0   4.16 MBytes
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-10.00  sec  50.6 GBytes  43.5 Gbits/sec   44            sender
+[  5]   0.00-10.00  sec  50.6 GBytes  43.5 Gbits/sec                  receiver
+
+iperf Done.

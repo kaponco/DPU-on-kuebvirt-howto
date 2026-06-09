@@ -1,0 +1,9 @@
+apiVersion: provisioning.dpu.nvidia.com/v1alpha1
+kind: DPUCluster
+metadata:
+  name: doca
+  namespace: dpf-operator-system
+spec:
+  kubeconfig: doca-admin-kubeconfig
+  maxNodes: 10
+  type: static

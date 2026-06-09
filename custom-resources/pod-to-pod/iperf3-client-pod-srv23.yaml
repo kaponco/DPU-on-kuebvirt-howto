@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: iperf3-client
+  namespace: iperf3-test
+  labels:
+    app: iperf3-client
+spec:
+  containers:
+  - name: iperf3
+    image: networkstatic/iperf3
+    command: ["sleep", "infinity"]  # Keep running for manual tests
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: kubernetes.io/hostname
+            operator: In
+            values:
+            - nvd-srv-23.nvidia.eng.rdu2.dc.redhat.com
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchLabels:
+            app: iperf3-server
+        topologyKey: kubernetes.io/hostname

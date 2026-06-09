@@ -1,8 +1,8 @@
 apiVersion: kubevirt.io/v1
 kind: VirtualMachine
 metadata:
-  name: test-vm
-  namespace: vm-workloads
+  name: test-vm-udn-srv27
+  namespace: my-ns-udn
   labels:
     app: test-vm
   annotations:
@@ -12,12 +12,14 @@ spec:
   template:
     metadata:
       labels:
-        kubevirt.io/vm: test-vm
+        kubevirt.io/vm: test-vm-udn-srv27
     spec:
       tolerations:
         - key: "nvidia.com/gpu"
           operator: "Exists"
           effect: "NoSchedule"
+      nodeSelector:
+        kubernetes.io/hostname: nvd-srv-27.nvidia.eng.rdu2.dc.redhat.com
       domain:
         devices:
           disks:
@@ -27,21 +29,13 @@ spec:
             - name: cloudinitdisk
               disk:
                 bus: virtio
-          interfaces:
-            - name: default
-              masquerade: {}
-            - name: udn-network
-              bridge: {}
         resources:
           requests:
             memory: 1Gi
             cpu: "1"
-      networks:
-        - name: default
-          pod: {}
-        - name: udn-network
-          multus:
-            networkName: vm-udn
+            openshift.io/bf3-p0-vfs: "2"
+          limits:
+            openshift.io/bf3-p0-vfs: "2"
       volumes:
         - name: containerdisk
           containerDisk:

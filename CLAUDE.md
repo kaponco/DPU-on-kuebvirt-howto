@@ -24,8 +24,14 @@ DPU-on-kuebvirt-howto/
 │   ├── openshift-dpf-readme.md # Automated DPF deployment framework
 │   └── gemini-instructions.md # SNO + DPU worker integration guide
 ├── custom-resources/          # Kubernetes YAML manifests
+│   ├── operatorgroup-cnv.yaml        # CNV OperatorGroup
+│   ├── subscription-cnv.yaml         # CNV Operator subscription
+│   ├── hyperconverged.yaml           # HyperConverged CR
+│   ├── dpfoperatorconfig.yaml        # DPF operator configuration
+│   ├── dpucluster.yaml               # DPU cluster definition
+│   ├── nodesriovdevicepluginconfig.yaml  # SR-IOV VF configuration
 │   ├── user-defined-network.yaml     # UDN configuration
-│   ├── virtual-machine.yaml          # Standard VM with UDN
+│   ├── virtual-machine-dpu.yaml      # VM with DPU nodeSelector
 │   └── virtual-machine-metal.yaml    # Metal worker VM with nodeSelector
 ├── tasks-lists/               # Operational checklists
 │   ├── rosa-cli-setup.md             # ROSA CLI installation guide
@@ -88,17 +94,37 @@ Step-by-step guide for adding DPU workers to Single Node OpenShift:
 
 ### Custom Resources (`custom-resources/`)
 
-Example Kubernetes manifests for deploying VMs with various networking configurations:
+Kubernetes manifests for operator installation and VM deployment:
+
+**CNV Operator Installation:**
+- `operatorgroup-cnv.yaml` - OperatorGroup for CNV namespace
+- `subscription-cnv.yaml` - Subscription to install OpenShift Virtualization
+- `hyperconverged.yaml` - HyperConverged CR to deploy virtualization components
+
+**DPF and SR-IOV Configuration:**
+- `dpfoperatorconfig.yaml` - DPF operator configuration (networking, SR-IOV, provisioning settings)
+- `dpucluster.yaml` - DPU cluster definition for static cluster management
+- `nodesriovdevicepluginconfig.yaml` - SR-IOV Virtual Function pools (management, UDN, general)
+- `network-attachment-definition-sriov.yaml` - NetworkAttachmentDefinition for SR-IOV interfaces
+- `claude-dpu-reader-role.yaml` - RBAC configuration for read-only cluster access
+
+**VM and Network Configuration:**
 - `user-defined-network.yaml` - OVN-K UDN configuration
-- `virtual-machine.yaml` - Standard VM with UDN networking
+- `virtual-machine-dpu.yaml` - VM with DPU nodeSelector for DPU host worker nodes
+- `virtual-machine-dpu-sriov.yaml` - VM with SR-IOV passthrough to DPU VF
 - `virtual-machine-metal.yaml` - VM with nodeSelector for metal worker nodes
+
+**Testing and Validation:**
+- `iperf3-server-pod_my_cluster.yaml` - iperf3 server pod for network performance testing
+- `iperf3-client-pod_my_cluster.yaml` - iperf3 client pod for network performance testing
 
 ### Task Lists (`tasks-lists/`)
 
 Operational checklists for common procedures:
 - `rosa-cli-setup.md` - Complete ROSA CLI installation and authentication workflow
 - `rosa-metal-worker-tasks.md` - Tasks for provisioning ROSA worker nodes
-- `vm-tasks.md` - VM operation and management checklists
+- `vm-tasks.md` - Complete workflow from CNV operator installation through DPF/SR-IOV configuration to VM deployment on DPU workers
+- `pod-to-pod-offload.md` - Network performance testing between DPU workers using iperf3
 
 ## Required Tools
 
@@ -110,6 +136,29 @@ The following CLI tools are used throughout the documentation and task lists:
 - **kubectl**: Kubernetes CLI (oc is a superset, but some docs may reference kubectl)
 
 Installation instructions for ROSA CLI are available in `tasks-lists/rosa-cli-setup.md`.
+
+## Kubeconfig Management
+
+This repository contains multiple kubeconfig files for different access levels:
+
+- **`kubeconfig_dev`** (READ-ONLY): Uses `claude-readonly` service account with `cluster-reader` role. **Always use this by default** to prevent accidental cluster modifications.
+- **`kubeconfig`** (ADMIN): Full admin access. Only use when explicitly making cluster changes.
+- **`kubeconfig_dpu`** (DPU CLUSTER): Access to the DPU's internal Kubernetes cluster (for advanced debugging).
+
+**Default usage pattern:**
+```bash
+# At the start of each session
+export KUBECONFIG=/Users/skapon/projects/DPU-on-kuebvirt-howto/kubeconfig_dev
+
+# For read-only operations (default)
+oc get pods -A
+oc describe node <node-name>
+
+# Only switch to admin kubeconfig when user explicitly requests cluster changes
+# (Always ask for permission first per cluster safety rules)
+export KUBECONFIG=/Users/skapon/projects/DPU-on-kuebvirt-howto/kubeconfig
+oc apply -f custom-resources/virtual-machine-dpu.yaml
+```
 
 ## Common Commands
 
@@ -152,16 +201,33 @@ oc describe userdefinednetwork <udn-name> -n <namespace>
 
 # Check network attachment definitions
 oc get network-attachment-definition -n <namespace>
+
+# Verify DPU worker nodes
+oc get nodes -l node-role.kubernetes.io/dpu-host-worker
+
+# Check SR-IOV device plugin configuration
+oc get nodesriovdevicepluginconfig -A
 ```
 
 ### Resource Application
 ```bash
 # Apply custom resources from this repository
 oc apply -f custom-resources/user-defined-network.yaml
-oc apply -f custom-resources/virtual-machine.yaml
+oc apply -f custom-resources/virtual-machine-dpu.yaml
 
 # Create namespaces
 oc create namespace vm-workloads
+```
+
+### Network Testing
+```bash
+# Deploy iperf3 server and client for pod-to-pod testing
+oc apply -f custom-resources/iperf3-server-pod_my_cluster.yaml
+oc apply -f custom-resources/iperf3-client-pod_my_cluster.yaml
+
+# Run network performance test
+SERVER_IP=$(oc get pod iperf3-server -n iperf3-test -o jsonpath='{.status.podIP}')
+oc exec -it iperf3-client -n iperf3-test -- iperf3 -c $SERVER_IP -t 30
 ```
 
 ## Working with This Repository
@@ -169,17 +235,44 @@ oc create namespace vm-workloads
 ### Following Task Lists
 
 **Start here for step-by-step procedures:**
-- **First-time VM deployment**: `tasks-lists/vm-tasks.md` - Complete workflow from CNV operator to running VM
+- **VM deployment with DPU acceleration**: `tasks-lists/vm-tasks.md` - Complete workflow from CNV operator installation → DPF/SR-IOV configuration → VM deployment on DPU workers
+- **Pod-to-pod network testing**: `tasks-lists/pod-to-pod-offload.md` - Network performance testing between DPU workers using iperf3
 - **ROSA cluster setup**: `tasks-lists/rosa-cli-setup.md` - ROSA CLI installation and authentication
 - **ROSA metal workers**: `tasks-lists/rosa-metal-worker-tasks.md` - Provisioning bare metal worker nodes
 
 Each task list includes verification commands and success criteria.
 
 ### Applying Custom Resources
-To deploy VMs or networks using the provided YAML manifests:
+
+**Install CNV Operator:**
 ```bash
-oc apply -f custom-resources/user-defined-network.yaml
-oc apply -f custom-resources/virtual-machine.yaml
+oc create namespace openshift-cnv
+oc apply -f custom-resources/operatorgroup-cnv.yaml
+oc apply -f custom-resources/subscription-cnv.yaml
+oc apply -f custom-resources/hyperconverged.yaml
+```
+
+**Configure DPF and SR-IOV:**
+```bash
+oc create namespace dpf-operator-system
+# Create image pull secret (adjust credentials)
+oc create secret docker-registry dpf-pull-secret \
+  --docker-server=<registry-url> \
+  --docker-username=<username> \
+  --docker-password=<password> \
+  -n dpf-operator-system
+
+# Apply DPF configuration (adjust kubernetesAPIServerVIP in dpfoperatorconfig.yaml)
+oc apply -f custom-resources/dpfoperatorconfig.yaml
+oc apply -f custom-resources/dpucluster.yaml
+oc apply -f custom-resources/nodesriovdevicepluginconfig.yaml
+```
+
+**Deploy VMs and networks:**
+```bash
+oc create namespace vm-workloads
+oc apply -f custom-resources/user-defined-network.yaml -n vm-workloads
+oc apply -f custom-resources/virtual-machine-dpu.yaml -n vm-workloads
 ```
 
 ### Reading Documentation Guides

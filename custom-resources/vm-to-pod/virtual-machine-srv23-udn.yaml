@@ -1,8 +1,8 @@
 apiVersion: kubevirt.io/v1
 kind: VirtualMachine
 metadata:
-  name: test-vm
-  namespace: vm-workloads
+  name: test-vm-udn
+  namespace: iperf3-test
   labels:
     app: test-vm
   annotations:
@@ -12,16 +12,20 @@ spec:
   template:
     metadata:
       labels:
-        kubevirt.io/vm: test-vm
+        kubevirt.io/vm: test-vm-udn
     spec:
       tolerations:
         - key: "nvidia.com/gpu"
           operator: "Exists"
           effect: "NoSchedule"
       nodeSelector:
-        workload-type: virtualization
+        kubernetes.io/hostname: nvd-srv-23.nvidia.eng.rdu2.dc.redhat.com
       domain:
         devices:
+          autoattachSerialConsole: true
+          interfaces:
+            - name: default
+              bridge: {}
           disks:
             - name: containerdisk
               disk:
@@ -29,11 +33,6 @@ spec:
             - name: cloudinitdisk
               disk:
                 bus: virtio
-          interfaces:
-            - name: default
-              masquerade: {}
-            - name: udn-network
-              bridge: {}
         resources:
           requests:
             memory: 1Gi
@@ -41,9 +40,6 @@ spec:
       networks:
         - name: default
           pod: {}
-        - name: udn-network
-          multus:
-            networkName: vm-udn
       volumes:
         - name: containerdisk
           containerDisk:
@@ -56,3 +52,8 @@ spec:
               password: fedora
               chpasswd: { expire: False }
               ssh_pwauth: True
+              bootcmd:
+                - [ sh, -c, 'grubby --update-kernel=ALL --args="console=tty0 console=ttyS0,115200n8"' ]
+              runcmd:
+                - systemctl enable serial-getty@ttyS0.service
+                - systemctl start serial-getty@ttyS0.service

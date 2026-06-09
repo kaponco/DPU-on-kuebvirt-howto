@@ -1,0 +1,22 @@
+apiVersion: noderesources.dpu.nvidia.com/v1alpha1
+kind: NodeSRIOVDevicePluginConfig
+metadata:
+  name: bf3-p0-vfs
+  namespace: dpf-operator-system
+spec:
+  devicePluginResources:
+  - name: bf3-p0-vfs-mgmt
+    ranges:
+    - end: 5
+      pfIndex: 0
+      start: 1
+    type: vf
+  # VFs 6-8 removed — managed by standalone vDPA device plugin (see secondary_sriov/)
+  - name: bf3-p0-vfs
+    options:
+      isRdma: true
+    ranges:
+    - end: 45
+      pfIndex: 0
+      start: 9
+    type: vf

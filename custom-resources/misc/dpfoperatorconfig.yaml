@@ -1,0 +1,46 @@
+apiVersion: operator.dpu.nvidia.com/v1alpha1
+kind: DPFOperatorConfig
+metadata:
+  name: dpfoperatorconfig
+  namespace: dpf-operator-system
+spec:
+  cniInstaller:
+    disable: true
+  deploymentMode: host-trusted
+  flannel:
+    podCIDR: 10.132.0.0/14
+  imagePullSecrets:
+  - dpf-pull-secret
+  kamajiClusterManager:
+    disable: true
+    replicas: 2
+  multus:
+    disable: true
+  networking:
+    controlPlaneMTU: 9000
+    highSpeedMTU: 9000
+  nodeSRIOVDevicePluginController:
+    devicePlugin:
+      defaultResourcePrefix: openshift.io
+    disable: false
+    replicas: 1
+  overrides:
+    dpuCNIBinPath: /var/lib/cni/bin/
+    dpuCNIPath: /run/multus/cni/net.d/
+    dpuOpenvSwitchSystemSharedLib64Path: /lib64
+    flannelSkipCNIConfigInstallation: false
+    kubernetesAPIServerPort: 6443
+    kubernetesAPIServerVIP: api.igal-cno.tsorya.com
+  provisioningController:
+    dmsTimeout: 900
+    enableDynamicBFCFGTemplates: true
+    hostAgentDNSPolicy: Default
+    maxDPUParallelInstallations: 50
+    maxUnavailableDPUNodes: 50
+    multiDPUOperationsSyncWaitTime: 30s
+    nodeEffectRemovalTimeout: 0s
+    osInstallTimeout: 45m
+    replicas: 2
+  staticClusterManager:
+    disable: false
+    replicas: 1

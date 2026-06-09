@@ -1,0 +1,14 @@
+apiVersion: k8s.ovn.org/v1
+kind: UserDefinedNetwork
+metadata:
+  name: accelerated-network
+  namespace: iperf3-test
+  annotations:
+    k8s.v1.cni.cncf.io/resourceName: openshift.io/bf3-p0-vfs
+spec:
+  topology: Layer3
+  layer3:
+    role: Secondary
+    subnets:
+    - cidr: 192.168.64.0/20
+      hostSubnet: 24
