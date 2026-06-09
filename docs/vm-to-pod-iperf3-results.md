@@ -111,7 +111,7 @@ virt-launcher pod (bridge binding)
   │ tap device → Linux bridge → OVS
   ▼
 BlueField-3 DPU (srv23)
-  │ DPDK software path on DPU ARM cores
+  │ OVS/DPDK on DPU ARM cores (CPU offload from host)
   │ Geneve encapsulation
   ▼
 Physical network (100 GbE)
@@ -125,13 +125,13 @@ iperf3 server pod (192.168.200.4)
 
 ## Conclusions
 
-1. **43.5 Gbps is a strong result for software-path VM networking.** The VM achieves ~70% of the pod-to-pod single-stream baseline (62 Gbps), with the gap attributable to the virtio + Linux bridge overhead in the `bridge: {}` binding.
+1. **43.5 Gbps is a strong result for VM networking with DPU CPU offload.** The VM achieves ~70% of the pod-to-pod single-stream baseline (62 Gbps), with the gap attributable to the virtio + Linux bridge overhead in the `bridge: {}` binding.
 
-2. **No hardware offload for VM traffic in this configuration.** The `bridge: {}` binding routes VM traffic through a Linux bridge inside the virt-launcher pod, which changes the OVS ingress port and prevents the DPU from matching it to hardware-offloaded flows. The DPU ARM cores handle packet processing in software (DPDK), not in the hardware pipeline.
+2. **DPU offloads network processing from the host CPU.** With the `bridge: {}` binding, VM traffic is processed by OVS/DPDK running on the DPU's ARM cores. The host x86 CPUs perform zero network processing — all packet handling, Geneve encapsulation, and OVS flow matching happen on the DPU. This frees host CPU cycles for VM workloads. However, the DPU's hardware eSwitch pipeline is not used — the DPU ARM cores handle packets in software rather than the ASIC processing them at line rate.
 
 3. **Retransmissions are minimal.** Only 44 retransmissions occurred in the first second (connection ramp-up), with zero retransmissions for the remaining 9 seconds — indicating a stable, well-behaved path.
 
-4. **Hardware offload requires vDPA binding.** To achieve true hardware-offloaded VM networking (where the DPU ASIC processes packets at line rate), the VM needs a `vdpa` network binding instead of `bridge`. This was attempted in the [vDPA investigation](../custom-resources/secondary_sriov/README.md) but is currently blocked by the SR-IOV device plugin not populating the `vdpa` struct in device-info.
+4. **Full hardware pipeline offload would require vDPA binding.** To move packet processing from the DPU ARM cores into the DPU ASIC/eSwitch (line-rate hardware offload), the VM needs a `vdpa` network binding instead of `bridge`. This was attempted in the [vDPA investigation](../custom-resources/secondary_sriov/README.md) but is currently blocked by the SR-IOV device plugin not populating the `vdpa` struct in device-info.
 
 ## Raw Output
 
